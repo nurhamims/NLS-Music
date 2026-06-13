@@ -112,6 +112,7 @@ fun FloatingNavigationToolbar(
 private fun NavIconItem(
     screen: Screens,
     selected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -122,17 +123,25 @@ private fun NavIconItem(
         label = "iconScale"
     )
 
+    // Match the screenshot design: circular indicator for selected tab
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    } else {
+        Color.Transparent
+    }
+
     val iconColor = if (selected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
+        MaterialTheme.colorScheme.primary
     } else {
         Color(0xFF938F99)
     }
 
     Box(
-        modifier = Modifier
-            .size(56.dp)
+        modifier = modifier
+            .size(54.dp) // Covers most of the pill's height
             .scale(scale)
             .clip(CircleShape)
+            .background(containerColor)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -144,7 +153,7 @@ private fun NavIconItem(
             painter = painterResource(if (selected) screen.iconIdActive else screen.iconIdInactive),
             contentDescription = stringResource(screen.titleId),
             tint = iconColor,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(28.dp) // Slightly larger icons like in the screenshot
         )
     }
 }
