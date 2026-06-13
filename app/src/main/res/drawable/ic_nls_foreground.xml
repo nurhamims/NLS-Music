@@ -1,0 +1,36 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Outer Ring -->
+    <path
+        android:pathData="M50,10 A40,40 0 1,1 50,90 A40,40 0 1,1 50,10 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000" />
+    <!-- Stylized 'N' -->
+    <path
+        android:pathData="M35,35 L35,65 M35,35 L50,65 L50,35"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <!-- Stylized 'L' -->
+    <path
+        android:pathData="M55,35 L55,65 L65,65"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <!-- Stylized 'S' (minimalist) -->
+    <path
+        android:pathData="M70,35 L60,35 A5,5 0 0,0 60,45 L65,45 A5,5 0 0,1 65,55 L55,55"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>
