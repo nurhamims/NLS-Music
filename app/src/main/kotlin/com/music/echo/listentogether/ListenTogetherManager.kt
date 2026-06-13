@@ -831,7 +831,7 @@ class ListenTogetherManager @Inject constructor(
     }
 
     private fun handlePlaybackSync(action: PlaybackActionPayload) {
-        if (action.sourceId == userId.value) {
+        if (action.sourceId == userId.value && !action.sourceId.isNullOrEmpty()) {
             Timber.tag(TAG).d("Ignoring self-echo of playback action: ${action.action}")
             return
         }

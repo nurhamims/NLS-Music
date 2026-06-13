@@ -51,7 +51,6 @@ import iad1tya.echo.music.constants.AppBarHeight
 import iad1tya.echo.music.constants.ListenTogetherInTopBarKey
 import iad1tya.echo.music.constants.ListenTogetherUsernameKey
 import iad1tya.echo.music.listentogether.ConnectionState
-import iad1tya.echo.music.listentogether.JoinRequestPayload
 import iad1tya.echo.music.listentogether.ListenTogetherEvent
 import iad1tya.echo.music.listentogether.SuggestionReceivedPayload
 import iad1tya.echo.music.listentogether.UserInfo
@@ -80,7 +79,6 @@ fun ListenTogetherScreen(
     val connectionState by listenTogetherManager.connectionState.collectAsState()
     val roomState by listenTogetherManager.roomState.collectAsState()
     val userId by listenTogetherManager.userId.collectAsState()
-    val pendingJoinRequests by listenTogetherManager.pendingJoinRequests.collectAsState()
     val pendingSuggestions by listenTogetherManager.pendingSuggestions.collectAsState()
 
     val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = true)
@@ -249,16 +247,6 @@ fun ListenTogetherScreen(
                             }
                         }
                     )
-                }
-
-                if (isHost && pendingJoinRequests.isNotEmpty()) {
-                    item {
-                        PendingJoinRequestsSection(
-                            requests = pendingJoinRequests,
-                            onApprove = { listenTogetherManager.approveJoin(it) },
-                            onReject = { listenTogetherManager.rejectJoin(it, "Rejected by host") }
-                        )
-                    }
                 }
 
                 if (isHost && pendingSuggestions.isNotEmpty()) {
@@ -841,84 +829,6 @@ private fun UserAvatar(
 }
 
 @Composable
-private fun PendingJoinRequestsSection(
-    requests: List<JoinRequestPayload>,
-    onApprove: (String) -> Unit,
-    onReject: (String) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.listen_together_join_requests),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            requests.forEach { request ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Surface(
-                        modifier = Modifier.size(40.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondary
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = request.username.take(1).uppercase(),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondary
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = request.username,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = { onApprove(request.userId) }, onLongClick = {}) {
-                        Icon(
-                            painter = painterResource(R.drawable.check),
-                            contentDescription = stringResource(R.string.approve),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(onClick = { onReject(request.userId) }, onLongClick = {}) {
-                        Icon(
-                            painter = painterResource(R.drawable.close),
-                            contentDescription = stringResource(R.string.reject),
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun PendingSuggestionsSection(
     suggestions: List<SuggestionReceivedPayload>,
     onApprove: (String) -> Unit,
@@ -1166,7 +1076,7 @@ private fun JoinCreateRoomSection(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = stringResource(R.string.waiting_for_approval),
+                            text = "Connecting to session...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontWeight = FontWeight.Medium,

@@ -74,7 +74,6 @@ import iad1tya.echo.music.listentogether.ListenTogetherServer
 import iad1tya.echo.music.listentogether.ListenTogetherServers
 import iad1tya.echo.music.listentogether.LogEntry
 import iad1tya.echo.music.listentogether.LogLevel
-import iad1tya.echo.music.listentogether.RoomRole
 import iad1tya.echo.music.ui.component.DefaultDialog
 import iad1tya.echo.music.ui.component.IconButton
 import iad1tya.echo.music.ui.component.IntegrationCard
@@ -96,7 +95,6 @@ fun ListenTogetherSettings(
     
     val connectionState by viewModel.connectionState.collectAsState()
     val roomState by viewModel.roomState.collectAsState()
-    val role by viewModel.role.collectAsState()
     val pendingJoinRequests by viewModel.pendingJoinRequests.collectAsState()
     val logs by viewModel.logs.collectAsState()
     val blockedUsernames by viewModel.blockedUsernames.collectAsState()
@@ -104,7 +102,6 @@ fun ListenTogetherSettings(
     val servers by ListenTogetherServers.serversFlow.collectAsState()
     var serverUrl by rememberPreference(ListenTogetherServerUrlKey, ListenTogetherServers.defaultServerUrl)
     var username by rememberPreference(ListenTogetherUsernameKey, "")
-    var autoApproval by rememberPreference(ListenTogetherAutoApprovalKey, false)
     var syncHostVolume by rememberPreference(ListenTogetherSyncVolumeKey, true)
     var smartResync by rememberPreference(ListenTogetherSmartResyncKey, true)
     
@@ -130,7 +127,7 @@ fun ListenTogetherSettings(
                     Toast.makeText(context, "Join rejected: ${event.reason}", Toast.LENGTH_SHORT).show()
                 }
                 is ListenTogetherEvent.JoinRequestReceived -> {
-                    Toast.makeText(context, "${event.username} wants to join", Toast.LENGTH_SHORT).show()
+                    // Removed as join requests are now auto-approved
                 }
                 is ListenTogetherEvent.Kicked -> {
                     Toast.makeText(context, "Kicked: ${event.reason}", Toast.LENGTH_SHORT).show()
@@ -344,18 +341,15 @@ fun ListenTogetherSettings(
                 items = listOf(
                     IntegrationCardItem(
                         icon = painterResource(R.drawable.person),
-                        title = { Text(stringResource(R.string.listen_together_blocked_users)) },
+                        title = { Text(stringResource(R.string.listen_together_username)) },
                         description = {
-                            Text(
-                                if (blockedUsernames.isNotEmpty()) 
-                                    stringResource(R.string.listen_together_blocked_users_count, blockedUsernames.size)
-                                else 
-                                    stringResource(R.string.listen_together_no_blocked_users)
-                            )
+                            Text(username.ifEmpty { stringResource(R.string.not_set) })
                         },
-                        onClick = if (blockedUsernames.isNotEmpty()) {
-                            { showBlockedUsersDialog = true }
-                        } else null
+                        onClick = if (roomState == null) {
+                            { showUsernameDialog = true }
+                        } else {
+                            { Toast.makeText(context, context.getString(R.string.listen_together_cannot_edit_username_in_room), Toast.LENGTH_SHORT).show() }
+                        }
                     ),
                     IntegrationCardItem(
                         icon = painterResource(R.drawable.cloud),
@@ -370,44 +364,6 @@ fun ListenTogetherSettings(
                             )
                         },
                         onClick = { showServerUrlDialog = true }
-                    ),
-                    IntegrationCardItem(
-                        icon = painterResource(R.drawable.person),
-                        title = { Text(stringResource(R.string.listen_together_username)) },
-                        description = {
-                            Text(username.ifEmpty { stringResource(R.string.not_set) })
-                        },
-                        onClick = if (roomState == null) {
-                            { showUsernameDialog = true }
-                        } else {
-                            { Toast.makeText(context, context.getString(R.string.listen_together_cannot_edit_username_in_room), Toast.LENGTH_SHORT).show() }
-                        }
-                    ),
-                    IntegrationCardItem(
-                        icon = painterResource(R.drawable.done),
-                        title = { Text(stringResource(R.string.listen_together_auto_approval)) },
-                        description = {
-                            Text(stringResource(R.string.listen_together_auto_approval_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = autoApproval,
-                                onCheckedChange = { autoApproval = it },
-                                
-                                enabled = roomState == null || role != RoomRole.GUEST,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (autoApproval) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize),
-                                    )
-                                }
-                            )
-                        },
-                        
-                        onClick = { if (roomState == null || role != RoomRole.GUEST) autoApproval = !autoApproval }
                     ),
                     IntegrationCardItem(
                         icon = painterResource(R.drawable.volume_up),

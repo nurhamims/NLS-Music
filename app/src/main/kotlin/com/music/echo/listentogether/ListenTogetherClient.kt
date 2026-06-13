@@ -589,39 +589,7 @@ class ListenTogetherClient @Inject constructor(
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun showJoinRequestNotification(payload: JoinRequestPayload) {
-        val notifId = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
-        
-        
-        joinRequestNotifications[payload.userId] = notifId
-
-        val approveIntent = Intent(context, ListenTogetherActionReceiver::class.java).apply {
-            action = ACTION_APPROVE_JOIN
-            putExtra(EXTRA_USER_ID, payload.userId)
-            putExtra(EXTRA_NOTIFICATION_ID, notifId)
-        }
-        val rejectIntent = Intent(context, ListenTogetherActionReceiver::class.java).apply {
-            action = ACTION_REJECT_JOIN
-            putExtra(EXTRA_USER_ID, payload.userId)
-            putExtra(EXTRA_NOTIFICATION_ID, notifId)
-        }
-
-        val approvePI = PendingIntent.getBroadcast(context, payload.userId.hashCode(), approveIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val rejectPI = PendingIntent.getBroadcast(context, payload.userId.hashCode().inv(), rejectIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-
-        val content = context.getString(R.string.listen_together_join_request_notification, payload.username)
-
-        val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.share)
-            .setContentTitle(context.getString(R.string.listen_together))
-            .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .addAction(0, context.getString(R.string.approve), approvePI)
-            .addAction(0, context.getString(R.string.reject), rejectPI)
-
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            NotificationManagerCompat.from(context).notify(notifId, builder.build())
-        }
+        // Removed as join requests are now auto-approved
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -794,34 +762,11 @@ class ListenTogetherClient @Inject constructor(
                 
                 MessageTypes.JOIN_REQUEST -> {
                     val payload = codec.decodePayload(msgType, payloadBytes, detectedFormat) as? JoinRequestPayload ?: return
-                    
-                    
-                    if (isUserBlocked(payload.username)) {
-                        log(LogLevel.INFO, "Join request from blocked user ignored", "User: ${payload.username}")
-                        
-                        rejectJoin(payload.userId, "You are blocked")
-                        return
-                    }
-
-                    _pendingJoinRequests.value += payload
-                    log(LogLevel.INFO, "Join request received", "User: ${payload.username}")
-                    
-                    
-                    val autoApprovalEnabled = context.dataStore.get(ListenTogetherAutoApprovalKey, false)
+                    log(LogLevel.INFO, "Join request received, auto-approving", "User: ${payload.username}")
                     
                     if (_role.value == RoomRole.HOST) {
-                        if (autoApprovalEnabled) {
-                            
-                            log(LogLevel.INFO, "Auto-approving join request", "User: ${payload.username}")
-                            approveJoin(payload.userId)
-                        } else {
-                            
-                            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                                showJoinRequestNotification(payload)
-                            }
-                        }
+                        approveJoin(payload.userId)
                     }
-                    scope.launch { _events.emit(ListenTogetherEvent.JoinRequestReceived(payload.userId, payload.username)) }
                 }
                 
                 MessageTypes.JOIN_APPROVED -> {
