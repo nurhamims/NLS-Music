@@ -172,12 +172,13 @@ private fun AboutAppCard() {
         ) {
             val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
             Image(
-                painter = painterResource(R.mipmap.ic_launcher),
+                painter = painterResource(R.drawable.ic_nls_foreground),
                 contentDescription = null,
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
+                    .background(Color(0xFF121212))
+                    .padding(16.dp),
             )
             Spacer(Modifier.height(4.dp))
             Text(
