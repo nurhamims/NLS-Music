@@ -478,14 +478,7 @@ class ListenTogetherManager @Inject constructor(
             
             is ListenTogetherEvent.PlaybackSync -> {
                 Timber.tag(TAG).d("PlaybackSync received: ${event.action.action}")
-                
-                val actionType = event.action.action
-                val isQueueOp = actionType == PlaybackActions.QUEUE_ADD ||
-                        actionType == PlaybackActions.QUEUE_REMOVE ||
-                        actionType == PlaybackActions.QUEUE_CLEAR
-                if (!isHost || isQueueOp) {
-                    handlePlaybackSync(event.action)
-                }
+                handlePlaybackSync(event.action)
             }
             
             is ListenTogetherEvent.UserJoined -> {

@@ -9,12 +9,14 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,11 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -40,12 +41,15 @@ import androidx.core.net.toUri
 import androidx.navigation.NavController
 import iad1tya.echo.music.BuildConfig
 import iad1tya.echo.music.LocalPlayerAwareWindowInsets
+import iad1tya.echo.music.constants.UserNameKey
+import iad1tya.echo.music.ui.component.DefaultDialog
 import iad1tya.echo.music.ui.component.IconButton
 import iad1tya.echo.music.ui.component.Material3SettingsGroup
 import iad1tya.echo.music.ui.component.Material3SettingsItem
 import iad1tya.echo.music.ui.screens.Screens
 import iad1tya.echo.music.ui.utils.backToMain
 import iad1tya.echo.music.echomusic.updater.getUpdateAvailableState
+import iad1tya.echo.music.utils.rememberPreference
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +75,39 @@ fun SettingsScreen(
     val aboutText = stringResource(R.string.about)
 
     val scrollState = rememberScrollState()
+
+    var userName by rememberPreference(UserNameKey, "")
+    var showNameDialog by remember { mutableStateOf(false) }
+
+    if (showNameDialog) {
+        var tempName by remember { mutableStateOf(userName) }
+        DefaultDialog(
+            onDismiss = { showNameDialog = false },
+            icon = { Icon(painterResource(R.drawable.person), contentDescription = null) },
+            title = { Text("Edit Name") },
+            buttons = {
+                TextButton(onClick = { showNameDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { 
+                    userName = tempName.trim()
+                    showNameDialog = false 
+                }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            }
+        ) {
+            OutlinedTextField(
+                value = tempName,
+                onValueChange = { tempName = it },
+                label = { Text("Display Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+
     Column(
         Modifier
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
@@ -94,6 +131,12 @@ fun SettingsScreen(
         )
 
         val itemsList = listOf(
+            Material3SettingsItem(
+                icon = painterResource(R.drawable.person),
+                title = { Text("Name") },
+                description = { Text(if (userName.isBlank()) "Not set" else userName) },
+                onClick = { showNameDialog = true }
+            ),
             Material3SettingsItem(
                 icon = painterResource(R.drawable.account),
                 title = { Text(accountText) },

@@ -552,9 +552,6 @@ fun DailyDiscoverCard(
 @Composable
 fun HomeHeader(
     userName: String?,
-    avatarUrl: String?,
-    onProfileClick: () -> Unit,
-    onSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val greeting = remember {
@@ -572,7 +569,7 @@ fun HomeHeader(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.Start
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -588,52 +585,6 @@ fun HomeHeader(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            IconButton(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.search),
-                    contentDescription = "Search",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .clickable { onProfileClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                if (avatarUrl != null) {
-                    AsyncImage(
-                        model = avatarUrl,
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(R.drawable.person),
-                        contentDescription = "Profile",
-                        modifier = Modifier.size(26.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
         }
     }
 }
@@ -1032,10 +983,7 @@ fun HomeScreen(
             ) {
                 item {
                     HomeHeader(
-                        userName = displayName,
-                        avatarUrl = url,
-                        onProfileClick = { navController.navigate("settings/account") },
-                        onSearchClick = { navController.navigate(Screens.Search.route) }
+                        userName = displayName
                     )
                 }
 

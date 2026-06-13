@@ -280,7 +280,7 @@ fun Thumbnail(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.GRADIENT
     )
-    val thumbnailCornerRadius by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 3f)
+    val thumbnailCornerRadius by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 21f)
     
     
     val textBackgroundColor = getTextColor(playerBackground)

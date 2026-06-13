@@ -224,7 +224,7 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     val displayName = combine(userName, accountName) { user, account ->
-        user ?: account
+        if (user.isNullOrBlank()) account else user
     }.stateIn(viewModelScope, SharingStarted.Lazily, "Guest")
     
     val accountImageUrl = MutableStateFlow<String?>(null)

@@ -733,6 +733,12 @@ class MainActivity : ComponentActivity() {
                 var showWelcomeDialog by remember { mutableStateOf(false) }
                 var showNamePrompt by remember { mutableStateOf(false) }
 
+                LaunchedEffect(Unit) {
+                    if (dataStore.get(UserNameKey) == null) {
+                        showNamePrompt = true
+                    }
+                }
+
                 LaunchedEffect(lastOpenedVersionCode) {
                     if (lastOpenedVersionCode < BuildConfig.VERSION_CODE) {
                         showWelcomeDialog = true
@@ -929,9 +935,7 @@ class MainActivity : ComponentActivity() {
                                             pureBlack = pureBlack,
                                             onShuffleClick = onShuffleClick,
                                             shuffleIconRes = R.drawable.shuffle,
-                                            shuffleContentDescription = stringResource(R.string.shuffle),
                                             onMusicRecognitionClick = onMusicRecognitionClick,
-                                            musicRecognitionContentDescription = stringResource(R.string.recognition),
                                             isSelected = { screen ->
                                                 currentRoute == screen.route || currentRoute?.startsWith("${screen.route}/") == true
                                             },
@@ -1183,11 +1187,6 @@ class MainActivity : ComponentActivity() {
                             onDismissRequest = {
                                 showWelcomeDialog = false
                                 setLastOpenedVersionCode(BuildConfig.VERSION_CODE)
-                                lifecycleScope.launch {
-                                    if (dataStore.get(UserNameKey) == null) {
-                                        showNamePrompt = true
-                                    }
-                                }
                             }
                         )
                     }
