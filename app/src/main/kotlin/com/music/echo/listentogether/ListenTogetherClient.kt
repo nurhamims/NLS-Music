@@ -126,6 +126,7 @@ sealed class ListenTogetherEvent {
     
     
     data class LocalSuggestionApproved(val payload: SuggestionReceivedPayload) : ListenTogetherEvent()
+    data class PermissionsChanged(val allowParticipantControl: Boolean) : ListenTogetherEvent()
 }
 
 
@@ -1141,6 +1142,15 @@ class ListenTogetherClient @Inject constructor(
                     scope.launch { _events.emit(ListenTogetherEvent.ChatMessageReceived(payload)) }
                 }
 
+                MessageTypes.PERMISSIONS_CHANGED -> {
+                    val payload = codec.decodePayload(msgType, payloadBytes, detectedFormat) as? RoomPermissionsChangedPayload ?: return
+                    _roomState.value = _roomState.value?.copy(
+                        allowParticipantControl = payload.allowParticipantControl
+                    )
+                    log(LogLevel.INFO, "Permissions updated", "Allow control: ${payload.allowParticipantControl}")
+                    scope.launch { _events.emit(ListenTogetherEvent.PermissionsChanged(payload.allowParticipantControl)) }
+                }
+
                 else -> {
                     log(LogLevel.WARNING, "Unknown message type", msgType)
                 }
@@ -1295,13 +1305,27 @@ class ListenTogetherClient @Inject constructor(
         queueTitle: String? = null,
         volume: Float? = null
     ) {
-        if (_role.value != RoomRole.HOST) {
-            log(LogLevel.ERROR, "Cannot control playback", "Not host")
+        val room = _roomState.value
+        val isAllowed = _role.value == RoomRole.HOST || (room?.allowParticipantControl == true)
+        
+        if (!isAllowed) {
+            log(LogLevel.ERROR, "Cannot control playback", "Not authorized (Guest control is OFF)")
             return
         }
+        
         sendMessage(
             MessageTypes.PLAYBACK_ACTION,
-            PlaybackActionPayload(action, trackId, position, trackInfo, insertNext, queue, queueTitle, volume)
+            PlaybackActionPayload(
+                action = action,
+                trackId = trackId,
+                position = position,
+                trackInfo = trackInfo,
+                insertNext = insertNext,
+                queue = queue,
+                queueTitle = queueTitle,
+                volume = volume,
+                sourceId = _userId.value
+            )
         )
     }
 
@@ -1394,6 +1418,14 @@ class ListenTogetherClient @Inject constructor(
         }
         log(LogLevel.INFO, "Requesting sync state from server")
         sendMessageNoPayload(MessageTypes.REQUEST_SYNC)
+    }
+
+    fun updatePermissions(allowParticipantControl: Boolean) {
+        if (_role.value != RoomRole.HOST) {
+            log(LogLevel.ERROR, "Cannot update permissions", "Not host")
+            return
+        }
+        sendMessage(MessageTypes.UPDATE_PERMISSIONS, UpdatePermissionsPayload(allowParticipantControl))
     }
 
     

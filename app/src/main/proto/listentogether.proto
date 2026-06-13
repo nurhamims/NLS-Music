@@ -33,6 +33,7 @@ message RoomState {
   int64 last_update = 7;
   float volume = 8;
   repeated TrackInfo queue = 9;
+  bool allow_participant_control = 10;
 }
 
 message CreateRoomPayload {
@@ -63,6 +64,7 @@ message PlaybackActionPayload {
   string queue_title = 7;
   float volume = 8;
   int64 server_time = 9;
+  string source_id = 10;
 }
 
 message BufferReadyPayload {
@@ -191,6 +193,14 @@ message UserReconnectedPayload {
 message UserDisconnectedPayload {
   string user_id = 1;
   string username = 2;
+}
+
+message UpdatePermissionsPayload {
+  bool allow_participant_control = 1;
+}
+
+message RoomPermissionsChangedPayload {
+  bool allow_participant_control = 1;
 }
 
 message Envelope {

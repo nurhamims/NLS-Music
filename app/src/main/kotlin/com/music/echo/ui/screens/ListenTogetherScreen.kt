@@ -1,5 +1,4 @@
 
-
 package iad1tya.echo.music.ui.screens
 
 import android.content.Context
@@ -17,21 +16,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,32 +26,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import iad1tya.echo.music.ui.component.DefaultDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton as MaterialIconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -93,11 +55,9 @@ import iad1tya.echo.music.listentogether.JoinRequestPayload
 import iad1tya.echo.music.listentogether.ListenTogetherEvent
 import iad1tya.echo.music.listentogether.SuggestionReceivedPayload
 import iad1tya.echo.music.listentogether.UserInfo
-import iad1tya.echo.music.ui.component.ListDialog
+import iad1tya.echo.music.ui.component.IconButton
 import iad1tya.echo.music.ui.component.Material3SettingsGroup
 import iad1tya.echo.music.ui.component.Material3SettingsItem
-import iad1tya.echo.music.ui.component.IconButton
-import iad1tya.echo.music.ui.component.IconButton
 import iad1tya.echo.music.ui.utils.backToMain
 import iad1tya.echo.music.utils.rememberPreference
 import kotlinx.coroutines.launch
@@ -137,9 +97,8 @@ fun ListenTogetherScreen(
     var selectedUserForMenu by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedUsername by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val waitingForApprovalText = stringResource(R.string.waiting_for_approval)
-    val invalidRoomCodeText = stringResource(R.string.invalid_room_code)
     val joinRequestDeniedText = stringResource(R.string.join_request_denied)
+    val invalidRoomCodeText = stringResource(R.string.invalid_room_code)
 
     LaunchedEffect(savedUsername) {
         if (usernameInput.isBlank() && savedUsername.isNotBlank()) {
@@ -178,7 +137,6 @@ fun ListenTogetherScreen(
     val isInRoom = listenTogetherManager.isInRoom
     val isHost = roomState?.hostId == userId
 
-    
     if (selectedUserForMenu != null && selectedUsername != null) {
         UserActionDialog(
             username = selectedUsername ?: "",
@@ -193,7 +151,7 @@ fun ListenTogetherScreen(
                 selectedUserForMenu?.let { userId ->
                     selectedUsername?.let { username ->
                         listenTogetherManager.blockUser(username)
-                        listenTogetherManager.kickUser(userId, R.string.user_blocked_by_host.toString())
+                        listenTogetherManager.kickUser(userId, "User blocked by host")
                     }
                 }
                 selectedUserForMenu = null
@@ -254,7 +212,6 @@ fun ListenTogetherScreen(
         }
 
         if (isInRoom) {
-            
             roomState?.let { room ->
                 item {
                     RoomStatusCard(
@@ -265,7 +222,19 @@ fun ListenTogetherScreen(
                     )
                 }
 
-                
+                if (isHost) {
+                    item {
+                        HostControlsSection(
+                            allowParticipantControl = room.allowParticipantControl,
+                            onToggleControl = { isAllowed: Boolean -> listenTogetherManager.updatePermissions(isAllowed) }
+                        )
+                    }
+                } else if (room.allowParticipantControl) {
+                    item {
+                        ParticipantControlIndicator()
+                    }
+                }
+
                 val connectedUsers = room.users.filter { it.isConnected }
                 val currentUserIdValue = userId ?: ""
                 item {
@@ -282,7 +251,6 @@ fun ListenTogetherScreen(
                     )
                 }
 
-                
                 if (isHost && pendingJoinRequests.isNotEmpty()) {
                     item {
                         PendingJoinRequestsSection(
@@ -293,7 +261,6 @@ fun ListenTogetherScreen(
                     }
                 }
 
-                
                 if (isHost && pendingSuggestions.isNotEmpty()) {
                     item {
                         PendingSuggestionsSection(
@@ -304,7 +271,6 @@ fun ListenTogetherScreen(
                     }
                 }
 
-                
                 item {
                     Button(
                         onClick = { listenTogetherManager.leaveRoom() },
@@ -328,7 +294,6 @@ fun ListenTogetherScreen(
                 }
             }
         } else {
-            
             item {
                 JoinCreateRoomSection(
                     usernameInput = usernameInput,
@@ -338,7 +303,6 @@ fun ListenTogetherScreen(
                     savedUsername = savedUsername,
                     isJoiningRoom = isJoiningRoom,
                     joinErrorMessage = joinErrorMessage,
-                    waitingForApprovalText = waitingForApprovalText,
                     bringIntoViewRequester = bringIntoViewRequester,
                     onCreateRoom = {
                         val username = usernameInput.takeIf { it.isNotBlank() } ?: savedUsername
@@ -383,7 +347,6 @@ fun ListenTogetherScreen(
             }
         }
 
-        
         item {
             SettingsLinkCard(
                 onClick = { navController.navigate("settings/integrations/listen_together") }
@@ -391,82 +354,58 @@ fun ListenTogetherScreen(
         }
         
         if (!isInRoom) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        Text(
-                            text = "How it Works",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        
-                        InstructionStep(
-                            title = "1. Create a Room",
-                            description = "Start a session and share the unique room code with your friends."
-                        )
-                        
-                        InstructionStep(
-                            title = "2. Join a Friend",
-                            description = "Enter their room code to join their session instantly."
-                        )
-                        
-                        InstructionStep(
-                            title = "3. Sync Playback",
-                            description = "The host controls the music. Everyone listens in perfect sync!"
-                        )
-                    }
-                }
-            }
+            item { InstructionsCard() }
         }
     }
 
     if (shouldShowTopBar) {
-        TopAppBar(
-            title = { Text(stringResource(R.string.listen_together)) },
-            navigationIcon = {
-                IconButton(
-                    onClick = navController::navigateUp,
-                    onLongClick = navController::backToMain
-                ) {
-                    Icon(
-                        painterResource(R.drawable.arrow_back),
-                        contentDescription = null
-                    )
-                }
-            },
-            actions = {
-                if (connectionState == ConnectionState.DISCONNECTED || connectionState == ConnectionState.ERROR) {
-                    TextButton(onClick = { listenTogetherManager.connect() }) {
-                        Text(stringResource(R.string.connect))
-                    }
-                } else if (connectionState == ConnectionState.CONNECTED) {
-                    TextButton(onClick = { listenTogetherManager.disconnect() }) {
-                        Text(stringResource(R.string.disconnect))
-                    }
-                } else {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+        ListenTogetherTopBar(
+            navController = navController,
+            connectionState = connectionState,
+            onConnect = { listenTogetherManager.connect() },
+            onDisconnect = { listenTogetherManager.disconnect() }
         )
+    }
+}
+
+@Composable
+private fun InstructionsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Text(
+                text = "How it Works",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            InstructionStep(
+                title = "1. Create a Room",
+                description = "Start a session and share the unique room code with your friends."
+            )
+            
+            InstructionStep(
+                title = "2. Join a Friend",
+                description = "Enter their room code to join their session instantly."
+            )
+            
+            InstructionStep(
+                title = "3. Sync Playback",
+                description = "The host controls the music. Everyone listens in perfect sync!"
+            )
+        }
     }
 }
 
@@ -525,124 +464,96 @@ private fun NotConfiguredContent() {
     }
 }
 
-
-
 @Composable
-private fun ConnectionStatusCard(
-    connectionState: ConnectionState,
-    onConnect: () -> Unit,
-    onDisconnect: () -> Unit,
-    onReconnect: () -> Unit
+private fun HostControlsSection(
+    allowParticipantControl: Boolean,
+    onToggleControl: (Boolean) -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Text(
+                text = "Host Controls",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggleControl(!allowParticipantControl) }
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            color = when (connectionState) {
-                                ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary
-                                ConnectionState.CONNECTING, ConnectionState.RECONNECTING -> MaterialTheme.colorScheme.tertiary
-                                ConnectionState.ERROR -> MaterialTheme.colorScheme.error
-                                ConnectionState.DISCONNECTED -> MaterialTheme.colorScheme.outline
-                            }
-                        )
+                Icon(
+                    painter = painterResource(R.drawable.tune),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = when (connectionState) {
-                        ConnectionState.CONNECTED -> stringResource(R.string.listen_together_connected)
-                        ConnectionState.CONNECTING -> stringResource(R.string.listen_together_connecting)
-                        ConnectionState.RECONNECTING -> stringResource(R.string.listen_together_reconnecting)
-                        ConnectionState.ERROR -> stringResource(R.string.listen_together_error)
-                        ConnectionState.DISCONNECTED -> stringResource(R.string.listen_together_disconnected)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = when (connectionState) {
-                        ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary
-                        ConnectionState.CONNECTING, ConnectionState.RECONNECTING -> MaterialTheme.colorScheme.tertiary
-                        ConnectionState.ERROR -> MaterialTheme.colorScheme.error
-                        ConnectionState.DISCONNECTED -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-
-            if (connectionState == ConnectionState.CONNECTING || connectionState == ConnectionState.RECONNECTING) {
-                Spacer(modifier = Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (connectionState == ConnectionState.DISCONNECTED || connectionState == ConnectionState.ERROR) {
-                    Button(
-                        onClick = onConnect,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.link),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.connect), fontWeight = FontWeight.SemiBold)
-                    }
-                } else {
-                    Button(
-                        onClick = onDisconnect,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(stringResource(R.string.disconnect), fontWeight = FontWeight.SemiBold)
-                    }
-                    FilledTonalButton(
-                        onClick = onReconnect,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Reconnect", fontWeight = FontWeight.SemiBold)
-                    }
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.listen_together_allow_participant_control),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = stringResource(R.string.listen_together_allow_participant_control_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+                Switch(
+                    checked = allowParticipantControl,
+                    onCheckedChange = onToggleControl
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParticipantControlIndicator() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.check),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "Playback Control Enabled",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "You can now play, pause, and seek",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -698,7 +609,7 @@ private fun RoomStatusCard(
             if (isHost) {
                 Spacer(modifier = Modifier.height(16.dp))
                 val inviteLink = remember(roomCode) {
-                    "https://echomusic-listen-together.onrender.com/listen?code=$roomCode"
+                    "https://nlsmusic.netlify.app/listen?code=$roomCode"
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -744,6 +655,48 @@ private fun RoomStatusCard(
             }
         }
     }
+}
+
+@Composable
+private fun ListenTogetherTopBar(
+    navController: NavController,
+    connectionState: ConnectionState,
+    onConnect: () -> Unit,
+    onDisconnect: () -> Unit
+) {
+    TopAppBar(
+        title = { Text(stringResource(R.string.listen_together)) },
+        navigationIcon = {
+            IconButton(
+                onClick = navController::navigateUp,
+                onLongClick = navController::backToMain
+            ) {
+                Icon(
+                    painterResource(R.drawable.arrow_back),
+                    contentDescription = null
+                )
+            }
+        },
+        actions = {
+            if (connectionState == ConnectionState.DISCONNECTED || connectionState == ConnectionState.ERROR) {
+                TextButton(onClick = onConnect) {
+                    Text(stringResource(R.string.connect))
+                }
+            } else if (connectionState == ConnectionState.CONNECTED) {
+                TextButton(onClick = onDisconnect) {
+                    Text(stringResource(R.string.disconnect))
+                }
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -943,7 +896,7 @@ private fun PendingJoinRequestsSection(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.weight(1f)
                     )
-                    MaterialIconButton(onClick = { onApprove(request.userId) }) {
+                    IconButton(onClick = { onApprove(request.userId) }, onLongClick = {}) {
                         Icon(
                             painter = painterResource(R.drawable.check),
                             contentDescription = stringResource(R.string.approve),
@@ -951,7 +904,7 @@ private fun PendingJoinRequestsSection(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    MaterialIconButton(onClick = { onReject(request.userId) }) {
+                    IconButton(onClick = { onReject(request.userId) }, onLongClick = {}) {
                         Icon(
                             painter = painterResource(R.drawable.close),
                             contentDescription = stringResource(R.string.reject),
@@ -1020,7 +973,7 @@ private fun PendingSuggestionsSection(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    MaterialIconButton(onClick = { onApprove(suggestion.suggestionId) }) {
+                    IconButton(onClick = { onApprove(suggestion.suggestionId) }, onLongClick = {}) {
                         Icon(
                             painter = painterResource(R.drawable.check),
                             contentDescription = stringResource(R.string.approve),
@@ -1028,7 +981,7 @@ private fun PendingSuggestionsSection(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    MaterialIconButton(onClick = { onReject(suggestion.suggestionId) }) {
+                    IconButton(onClick = { onReject(suggestion.suggestionId) }, onLongClick = {}) {
                         Icon(
                             painter = painterResource(R.drawable.close),
                             contentDescription = stringResource(R.string.reject),
@@ -1051,7 +1004,6 @@ private fun JoinCreateRoomSection(
     savedUsername: String,
     isJoiningRoom: Boolean,
     joinErrorMessage: String?,
-    waitingForApprovalText: String,
     bringIntoViewRequester: BringIntoViewRequester,
     onCreateRoom: () -> Unit,
     onJoinRoom: () -> Unit,
@@ -1133,7 +1085,7 @@ private fun JoinCreateRoomSection(
                 },
                 trailingIcon = {
                     if (usernameInput.isNotBlank()) {
-                        MaterialIconButton(onClick = { onUsernameChange("") }) {
+                        IconButton(onClick = { onUsernameChange("") }, onLongClick = {}) {
                             Icon(painterResource(R.drawable.close), null)
                         }
                     }
@@ -1170,7 +1122,7 @@ private fun JoinCreateRoomSection(
                     },
                     trailingIcon = {
                         if (roomCodeInput.isNotBlank()) {
-                            MaterialIconButton(onClick = { onRoomCodeChange("") }) {
+                            IconButton(onClick = { onRoomCodeChange("") }, onLongClick = {}) {
                                 Icon(painterResource(R.drawable.close), null)
                             }
                         }
@@ -1214,7 +1166,7 @@ private fun JoinCreateRoomSection(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = waitingForApprovalText,
+                            text = stringResource(R.string.waiting_for_approval),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontWeight = FontWeight.Medium,
@@ -1356,7 +1308,6 @@ private fun UserActionDialog(
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1391,7 +1342,6 @@ private fun UserActionDialog(
                 }
             }
 
-            
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1425,7 +1375,6 @@ private fun UserActionDialog(
                 }
             }
 
-            
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()

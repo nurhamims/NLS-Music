@@ -183,6 +183,7 @@ class MessageCodec(
                     .setInsertNext(payload.insertNext ?: false)
                     .setVolume(payload.volume ?: 1f)
                     .setServerTime(payload.serverTime ?: 0)
+                    .setSourceId(payload.sourceId ?: "")
                 
                 payload.trackId?.let { builder.setTrackId(it) }
                 payload.trackInfo?.let { builder.setTrackInfo(trackInfoToProto(it)) }
@@ -217,6 +218,9 @@ class MessageCodec(
                 .build()
             is TransferHostPayload -> Listentogether.TransferHostPayload.newBuilder()
                 .setNewHostId(payload.newHostId)
+                .build()
+            is UpdatePermissionsPayload -> Listentogether.UpdatePermissionsPayload.newBuilder()
+                .setAllowParticipantControl(payload.allowParticipantControl)
                 .build()
             else -> throw IllegalArgumentException("Unsupported payload type: ${payload::class.simpleName}")
         }
@@ -257,6 +261,7 @@ class MessageCodec(
             MessageTypes.SUGGESTION_RECEIVED -> json.decodeFromString<SuggestionReceivedPayload>(payloadString)
             MessageTypes.SUGGESTION_APPROVED -> json.decodeFromString<SuggestionApprovedPayload>(payloadString)
             MessageTypes.SUGGESTION_REJECTED -> json.decodeFromString<SuggestionRejectedPayload>(payloadString)
+            MessageTypes.PERMISSIONS_CHANGED -> json.decodeFromString<RoomPermissionsChangedPayload>(payloadString)
             MessageTypes.CHAT -> json.decodeFromString<ChatMessagePayload>(payloadString)
             else -> null
         }
@@ -305,7 +310,8 @@ class MessageCodec(
                     queue = pb.queueList.map { protoToTrackInfo(it) },
                     queueTitle = pb.queueTitle.let { if (it.isEmpty()) null else it },
                     volume = pb.volume.let { if (it <= 0) null else it },
-                    serverTime = pb.serverTime.let { if (it <= 0) null else it }
+                    serverTime = pb.serverTime.let { if (it <= 0) null else it },
+                    sourceId = pb.sourceId.let { if (it.isEmpty()) null else it }
                 )
             }
             MessageTypes.BUFFER_WAIT -> {
@@ -376,6 +382,10 @@ class MessageCodec(
                 val pb = Listentogether.SuggestionRejectedPayload.parseFrom(payloadBytes)
                 SuggestionRejectedPayload(pb.suggestionId, pb.reason.let { if (it.isEmpty()) null else it })
             }
+            MessageTypes.PERMISSIONS_CHANGED -> {
+                val pb = Listentogether.RoomPermissionsChangedPayload.parseFrom(payloadBytes)
+                RoomPermissionsChangedPayload(pb.allowParticipantControl)
+            }
             else -> null
         }
     }
@@ -425,7 +435,8 @@ class MessageCodec(
             position = proto.position,
             lastUpdate = proto.lastUpdate,
             volume = proto.volume,
-            queue = proto.queueList.map { protoToTrackInfo(it) }
+            queue = proto.queueList.map { protoToTrackInfo(it) },
+            allowParticipantControl = proto.allowParticipantControl
         )
     }
     
@@ -444,6 +455,8 @@ class MessageCodec(
             is RejectSuggestionPayload -> RejectSuggestionPayload.serializer()
             is ReconnectPayload -> ReconnectPayload.serializer()
             is TransferHostPayload -> TransferHostPayload.serializer()
+            is UpdatePermissionsPayload -> UpdatePermissionsPayload.serializer()
+            is RoomPermissionsChangedPayload -> RoomPermissionsChangedPayload.serializer()
             is ChatPayload -> ChatPayload.serializer()
             else -> throw IllegalArgumentException("Unknown type: ${value!!::class.simpleName}")
         } as kotlinx.serialization.KSerializer<T>

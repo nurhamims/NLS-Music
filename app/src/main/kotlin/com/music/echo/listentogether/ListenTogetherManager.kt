@@ -124,7 +124,11 @@ class ListenTogetherManager @Inject constructor(
     private val playerListener = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             try {
-                if (isSyncing || !isHost || !isInRoom) return
+                if (isSyncing || !isInRoom) return
+                
+                val room = roomState.value
+                val canControl = isHost || room?.allowParticipantControl == true
+                if (!canControl) return
                 
                 val connection = playerConnection ?: return
                 val player = connection.player
@@ -180,8 +184,12 @@ class ListenTogetherManager @Inject constructor(
         
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             try {
-                if (isSyncing || !isHost || !isInRoom) return
+                if (isSyncing || !isInRoom) return
                 if (mediaItem == null) return
+                
+                val room = roomState.value
+                val canControl = isHost || room?.allowParticipantControl == true
+                if (!canControl) return
                 
                 val connection = playerConnection ?: return
                 val player = connection.player
@@ -219,7 +227,11 @@ class ListenTogetherManager @Inject constructor(
             reason: Int
         ) {
             try {
-                if (isSyncing || !isHost || !isInRoom) return
+                if (isSyncing || !isInRoom) return
+                
+                val room = roomState.value
+                val canControl = isHost || room?.allowParticipantControl == true
+                if (!canControl) return
                 
                 
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) {
@@ -256,8 +268,9 @@ class ListenTogetherManager @Inject constructor(
             
             
             connection?.shouldBlockPlaybackChanges = {
-                
-                isInRoom && !isHost
+                val room = roomState.value
+                val canControl = isHost || room?.allowParticipantControl == true
+                isInRoom && !canControl
             }
             
             
@@ -274,8 +287,10 @@ class ListenTogetherManager @Inject constructor(
                 
                 connection.onSkipPrevious = {
                     try {
-                        if (isHost && !isSyncing) {
-                            Timber.tag(TAG).d("Host Skip Previous triggered")
+                        val room = roomState.value
+                        val canControl = isHost || room?.allowParticipantControl == true
+                        if (canControl && !isSyncing) {
+                            Timber.tag(TAG).d("Skip Previous triggered")
                             client.sendPlaybackAction(PlaybackActions.SKIP_PREV)
                         }
                     } catch (e: Exception) {
@@ -284,8 +299,10 @@ class ListenTogetherManager @Inject constructor(
                 }
                 connection.onSkipNext = {
                 try {
-                        if (isHost && !isSyncing) {
-                            Timber.tag(TAG).d("Host Skip Next triggered")
+                        val room = roomState.value
+                        val canControl = isHost || room?.allowParticipantControl == true
+                        if (canControl && !isSyncing) {
+                            Timber.tag(TAG).d("Skip Next triggered")
                             client.sendPlaybackAction(PlaybackActions.SKIP_NEXT)
                         }
                     } catch (e: Exception) {
@@ -296,8 +313,10 @@ class ListenTogetherManager @Inject constructor(
                 
                 connection.onRestartSong = {
                     try {
-                        if (isHost && !isSyncing) {
-                            Timber.tag(TAG).d("Host Restart Song triggered (sending 1ms as 0ms workaround)")
+                        val room = roomState.value
+                        val canControl = isHost || room?.allowParticipantControl == true
+                        if (canControl && !isSyncing) {
+                            Timber.tag(TAG).d("Restart Song triggered (sending 1ms as 0ms workaround)")
                             client.sendPlaybackAction(PlaybackActions.SEEK, position = 1L)
                         }
                     } catch (e: Exception) {
@@ -812,6 +831,11 @@ class ListenTogetherManager @Inject constructor(
     }
 
     private fun handlePlaybackSync(action: PlaybackActionPayload) {
+        if (action.sourceId == userId.value) {
+            Timber.tag(TAG).d("Ignoring self-echo of playback action: ${action.action}")
+            return
+        }
+
         val connection = playerConnection
         if (connection == null) {
             Timber.tag(TAG).w("Cannot sync playback - no player connection")
@@ -1626,6 +1650,11 @@ class ListenTogetherManager @Inject constructor(
     
     
     fun getSessionAge(): Long = client.getSessionAge()
+
+    fun updatePermissions(allowParticipantControl: Boolean) {
+        if (!isHost) return
+        client.updatePermissions(allowParticipantControl)
+    }
 
     
     private var heartbeatJob: Job? = null

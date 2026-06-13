@@ -25,6 +25,7 @@ object MessageTypes {
     const val SUGGEST_TRACK = "suggest_track"
     const val APPROVE_SUGGESTION = "approve_suggestion"
     const val REJECT_SUGGESTION = "reject_suggestion"
+    const val UPDATE_PERMISSIONS = "update_permissions"
 
     
     const val ROOM_CREATED = "room_created"
@@ -47,6 +48,7 @@ object MessageTypes {
     const val SUGGESTION_RECEIVED = "suggestion_received"
     const val SUGGESTION_APPROVED = "suggestion_approved"
     const val SUGGESTION_REJECTED = "suggestion_rejected"
+    const val PERMISSIONS_CHANGED = "permissions_changed"
 }
 
 
@@ -103,7 +105,8 @@ data class RoomState(
     val position: Long, 
     @SerialName("last_update") val lastUpdate: Long, 
     val volume: Float = 1f,
-    val queue: List<TrackInfo> = emptyList()
+    val queue: List<TrackInfo> = emptyList(),
+    @SerialName("allow_participant_control") val allowParticipantControl: Boolean = false
 )
 
 
@@ -140,7 +143,8 @@ data class PlaybackActionPayload(
     val queue: List<TrackInfo>? = null,
     @SerialName("queue_title") val queueTitle: String? = null,
     val volume: Float? = null,
-    @SerialName("server_time") val serverTime: Long? = null
+    @SerialName("server_time") val serverTime: Long? = null,
+    @SerialName("source_id") val sourceId: String? = null
 )
 
 @Serializable
@@ -322,4 +326,14 @@ data class UserReconnectedPayload(
 data class UserDisconnectedPayload(
     @SerialName("user_id") val userId: String,
     val username: String
+)
+
+@Serializable
+data class UpdatePermissionsPayload(
+    @SerialName("allow_participant_control") val allowParticipantControl: Boolean
+)
+
+@Serializable
+data class RoomPermissionsChangedPayload(
+    @SerialName("allow_participant_control") val allowParticipantControl: Boolean
 )
