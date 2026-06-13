@@ -1,4 +1,4 @@
-# Echo Music v5.1.9
+# NLS music v5.1.9
 
 - Added a search bar to the Settings screen to allow quick filtering of settings categories and individual sub-settings (e.g., Theme, Cache, Quality).
 - Improved update downloading by running it as a background service with auto-retry and fixed notification spam.
