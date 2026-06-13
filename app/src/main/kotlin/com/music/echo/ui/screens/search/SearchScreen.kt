@@ -109,6 +109,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import iad1tya.echo.music.ui.component.LocalMenuState
 import iad1tya.echo.music.ui.component.YouTubeGridItem
+import iad1tya.echo.music.ui.component.shimmer.GridItemPlaceHolder
+import iad1tya.echo.music.ui.component.shimmer.ShimmerHost
+import iad1tya.echo.music.ui.component.shimmer.TextPlaceholder
 import iad1tya.echo.music.ui.menu.YouTubeAlbumMenu
 import iad1tya.echo.music.constants.GridThumbnailHeight
 import iad1tya.echo.music.constants.GridItemsSizeKey
@@ -470,59 +473,68 @@ fun ExploreTabContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding
     ) {
-        moodAndGenresList?.forEach { section ->
+        if (moodAndGenresList == null) {
             item {
-                NavigationTitle(title = section.title)
-            }
-            
-            val rows = section.items.chunked(2)
-            items(rows) { row ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp)
-                ) {
-                    row.forEach { item ->
-                        Box(
-                            contentAlignment = Alignment.CenterStart,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(6.dp)
-                                .height(64.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainer)
-                                .clickable {
-                                    navController.navigate(
-                                        "youtube_browse/${item.endpoint.browseId}?params=${item.endpoint.params}"
-                                    )
-                                }
-                                .padding(horizontal = 14.dp)
-                        ) {
-                            Text(
-                                text = item.title,
-                                style = MaterialTheme.typography.labelLarge,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                ShimmerHost {
+                    repeat(4) {
+                        TextPlaceholder(
+                            height = 36.dp,
+                            modifier = Modifier.padding(12.dp).width(200.dp)
+                        )
+                        Row(modifier = Modifier.padding(horizontal = 6.dp)) {
+                            repeat(2) {
+                                TextPlaceholder(
+                                    height = 64.dp,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.weight(1f).padding(6.dp)
+                                )
+                            }
                         }
-                    }
-                    
-                    repeat(2 - row.size) {
-                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
-        }
-
-        if (moodAndGenresList == null) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularWavyProgressIndicator()
+        } else {
+            moodAndGenresList?.forEach { section ->
+                item {
+                    NavigationTitle(title = section.title)
+                }
+                
+                val rows = section.items.chunked(2)
+                items(rows) { row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp)
+                    ) {
+                        row.forEach { item ->
+                            Box(
+                                contentAlignment = Alignment.CenterStart,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(6.dp)
+                                    .height(64.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .clickable {
+                                        navController.navigate(
+                                            "youtube_browse/${item.endpoint.browseId}?params=${item.endpoint.params}"
+                                        )
+                                    }
+                                    .padding(horizontal = 14.dp)
+                            ) {
+                                Text(
+                                    text = item.title,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        
+                        repeat(2 - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -550,11 +562,16 @@ fun AlbumsTabContent(
     val gridItemSize by rememberEnumPreference(GridItemsSizeKey, GridItemSize.BIG)
 
     if (newReleaseAlbums == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularWavyProgressIndicator()
+        ShimmerHost {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = GridThumbnailHeight + if (gridItemSize == GridItemSize.BIG) 24.dp else (-24).dp),
+                contentPadding = PaddingValues(12.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(12) {
+                    GridItemPlaceHolder()
+                }
+            }
         }
     } else {
         LazyVerticalGrid(

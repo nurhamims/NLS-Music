@@ -933,9 +933,9 @@ class MainActivity : ComponentActivity() {
                                         FloatingNavigationToolbar(
                                             items = navigationItems,
                                             pureBlack = pureBlack,
-                                            onShuffleClick = onShuffleClick,
-                                            shuffleIconRes = R.drawable.shuffle,
-                                            onMusicRecognitionClick = onMusicRecognitionClick,
+                                            onDownloadedClick = {
+                                                navController.navigate("auto_playlist/downloaded")
+                                            },
                                             isSelected = { screen ->
                                                 currentRoute == screen.route || currentRoute?.startsWith("${screen.route}/") == true
                                             },

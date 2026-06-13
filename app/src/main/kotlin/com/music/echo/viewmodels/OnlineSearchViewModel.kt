@@ -27,6 +27,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,6 +37,11 @@ constructor(
     @ApplicationContext val context: Context,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+    companion object {
+        private val summaryCache = ConcurrentHashMap<String, SearchSummaryPage>()
+        private val resultsCache = ConcurrentHashMap<String, ItemsPage>()
+    }
+
     val query = try {
         URLDecoder.decode(savedStateHandle.get<String>("query")!!, "UTF-8")
     } catch (e: IllegalArgumentException) {
@@ -46,6 +52,9 @@ constructor(
     val viewStateMap = mutableStateMapOf<String, ItemsPage?>()
 
     init {
+        // Load from cache if available
+        summaryCache[query]?.let { summaryPage = it }
+
         viewModelScope.launch {
             filter.collect { filter ->
                 if (filter == null) {
@@ -56,15 +65,19 @@ constructor(
                                 val hideExplicit = context.dataStore.get(HideExplicitKey, false)
                                 val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
                                 val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-                                summaryPage =
-                                    it.filterExplicit(
-                                        hideExplicit,
-                                    ).filterVideoSongs(hideVideoSongs).filterYoutubeShorts(hideYoutubeShorts)
+                                val filtered = it.filterExplicit(
+                                    hideExplicit,
+                                ).filterVideoSongs(hideVideoSongs).filterYoutubeShorts(hideYoutubeShorts)
+                                summaryPage = filtered
+                                summaryCache[query] = filtered
                             }.onFailure {
                                 reportException(it)
                             }
                     }
                 } else {
+                    val cacheKey = "${query}_${filter.value}"
+                    resultsCache[cacheKey]?.let { viewStateMap[filter.value] = it }
+
                     if (viewStateMap[filter.value] == null) {
                         YouTube
                             .search(query, filter)
@@ -72,20 +85,21 @@ constructor(
                                 val hideExplicit = context.dataStore.get(HideExplicitKey, false)
                                 val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
                                 val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-                                viewStateMap[filter.value] =
-                                    ItemsPage(
-                                        result.items
-                                            .distinctBy { it.id }
-                                            .filterExplicit(
-                                                hideExplicit,
-                                            )
-                                            .let { items ->
-                                                if (filter.value == YouTube.SearchFilter.FILTER_VIDEO.value) items
-                                                else items.filterVideoSongs(hideVideoSongs)
-                                            }
-                                            .filterYoutubeShorts(hideYoutubeShorts),
-                                        result.continuation,
-                                    )
+                                val page = ItemsPage(
+                                    result.items
+                                        .distinctBy { it.id }
+                                        .filterExplicit(
+                                            hideExplicit,
+                                        )
+                                        .let { items ->
+                                            if (filter.value == YouTube.SearchFilter.FILTER_VIDEO.value) items
+                                            else items.filterVideoSongs(hideVideoSongs)
+                                        }
+                                        .filterYoutubeShorts(hideYoutubeShorts),
+                                    result.continuation,
+                                )
+                                viewStateMap[filter.value] = page
+                                resultsCache[cacheKey] = page
                             }.onFailure {
                                 reportException(it)
                             }

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -35,6 +36,10 @@ constructor(
     @ApplicationContext val context: Context,
     database: MusicDatabase,
 ) : ViewModel() {
+    companion object {
+        private val suggestionCache = ConcurrentHashMap<String, SearchSuggestionViewState>()
+    }
+
     val query = MutableStateFlow("")
     private val _viewState = MutableStateFlow(SearchSuggestionViewState())
     val viewState = _viewState.asStateFlow()
@@ -50,36 +55,47 @@ constructor(
                             )
                         }
                     } else {
-                        val parsedUrl = YouTubeUrlParser.parse(query)
-                        val parsedItem = if (parsedUrl != null) fetchParsedUrlItem(parsedUrl) else null
-                        
-                        val result = if (parsedUrl != null) null else YouTube.searchSuggestions(query).getOrNull()
-                        val hideExplicit = context.dataStore.get(HideExplicitKey, false)
-                        val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-
-                        database
-                            .searchHistory(query)
-                            .map { it.take(3) }
-                            .map { history ->
-                                SearchSuggestionViewState(
-                                    history = history,
-                                    suggestions =
-                                    result
-                                        ?.queries
-                                        ?.filter { suggestionQuery ->
-                                            history.none { it.query == suggestionQuery }
-                                        }.orEmpty(),
-                                    items = listOfNotNull(parsedItem) +
-                                    result
-                                        ?.recommendedItems
-                                        ?.distinctBy { it.id }
-                                        ?.filter { it.id != parsedItem?.id }
-                                        ?.filterExplicit(hideExplicit)
-                                        ?.filterVideoSongs(hideVideoSongs)
-                                        .orEmpty(),
-                                    isFromLink = parsedUrl != null
-                                )
+                        // Return cached state immediately if available
+                        suggestionCache[query]?.let { cached ->
+                            // Still need to update history from DB
+                            database.searchHistory(query).map { history ->
+                                cached.copy(history = history.take(3))
                             }
+                        } ?: run {
+                            val parsedUrl = YouTubeUrlParser.parse(query)
+                            val parsedItem = if (parsedUrl != null) fetchParsedUrlItem(parsedUrl) else null
+                            
+                            val result = if (parsedUrl != null) null else YouTube.searchSuggestions(query).getOrNull()
+                            val hideExplicit = context.dataStore.get(HideExplicitKey, false)
+                            val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
+
+                            database
+                                .searchHistory(query)
+                                .map { it.take(3) }
+                                .map { history ->
+                                    val state = SearchSuggestionViewState(
+                                        history = history,
+                                        suggestions =
+                                        result
+                                            ?.queries
+                                            ?.filter { suggestionQuery ->
+                                                history.none { it.query == suggestionQuery }
+                                            }.orEmpty(),
+                                        items = listOfNotNull(parsedItem) +
+                                        result
+                                            ?.recommendedItems
+                                            ?.distinctBy { it.id }
+                                            ?.filter { it.id != parsedItem?.id }
+                                            ?.filterExplicit(hideExplicit)
+                                            ?.filterVideoSongs(hideVideoSongs)
+                                            .orEmpty(),
+                                        isFromLink = parsedUrl != null
+                                    )
+                                    // Cache the result
+                                    suggestionCache[query] = state
+                                    state
+                                }
+                        }
                     }
                 }.collect {
                     _viewState.value = it

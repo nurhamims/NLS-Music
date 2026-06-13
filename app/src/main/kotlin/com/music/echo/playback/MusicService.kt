@@ -50,8 +50,10 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.LoadControl
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.analytics.PlaybackStats
 import androidx.media3.exoplayer.analytics.PlaybackStatsListener
@@ -864,6 +866,19 @@ class MusicService :
         }
     }
 
+    private fun createLoadControl(): LoadControl {
+        return DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                30_000, // minBufferMs: 30s for better stability on slow networks
+                90_000, // maxBufferMs: 90s for aggressive pre-buffering
+                1_000,  // bufferForPlaybackMs: 1s for faster start
+                2_500   // bufferForPlaybackAfterRebufferMs: 2.5s to ensure stability
+            )
+            .setBackBuffer(15_000, true) // Retain 15s of back buffer for smooth seek-back
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+    }
+
     private fun createExoPlayer(): ExoPlayer {
         val eqProcessor = CustomEqualizerAudioProcessor()
         equalizerService.addAudioProcessor(eqProcessor)
@@ -880,6 +895,7 @@ class MusicService :
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(createMediaSourceFactory())
             .setRenderersFactory(createRenderersFactory(eqProcessor, silenceProcessor))
+            .setLoadControl(createLoadControl())
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setAudioAttributes(

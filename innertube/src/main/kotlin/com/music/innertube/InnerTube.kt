@@ -20,6 +20,7 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.compression.*
+import io.ktor.client.plugins.cache.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.*
@@ -89,36 +90,70 @@ class InnerTube {
             deflate(0.8F)
         }
 
+        // Install Cache plugin for aggressive caching
+        install(HttpCache)
+
         // Enhanced network configuration for better performance
         engine {
             config {
-                // Connection pool settings for better connection reuse
+                // Optimized connection pool settings for slow networks
                 connectionPool(
                     okhttp3.ConnectionPool(
-                        10, // maxIdleConnections
-                        5, // keepAliveDuration
+                        20, // increased maxIdleConnections
+                        10, // increased keepAliveDuration
                         java.util.concurrent.TimeUnit.MINUTES
                     )
                 )
                 
-                // Timeout configurations
-                connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-                writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                // Timeout configurations - slightly longer for slow connections
+                connectTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
+                readTimeout(90, java.util.concurrent.TimeUnit.SECONDS)
+                writeTimeout(90, java.util.concurrent.TimeUnit.SECONDS)
                 
-                // Enable HTTP/2 for better performance
+                // Enable HTTP/2 and modern protocols
                 protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
                 
-                // Retry on connection failure
+                // Retry on connection failure at OkHttp level
                 retryOnConnectionFailure(true)
                 
-                // Cache configuration for better performance
+                // Cache configuration - move to a more persistent location if possible, 
+                // but for now ensure it's large enough
                 cache(
                     okhttp3.Cache(
-                        directory = java.io.File(System.getProperty("java.io.tmpdir"), "http_cache"),
-                        maxSize = 50L * 1024L * 1024L // 50 MB
+                        directory = java.io.File(System.getProperty("java.io.tmpdir"), "innertube_http_cache"),
+                        maxSize = 100L * 1024L * 1024L // Increased to 100 MB
                     )
                 )
+
+                // Add Interceptor for duplicate request prevention and additional retries
+                addInterceptor { chain ->
+                    val request = chain.request()
+                    var response: okhttp3.Response? = null
+                    var exception: IOException? = null
+                    
+                    // Simple retry logic with exponential backoff for specific error codes
+                    var tryCount = 0
+                    val maxTries = 3
+                    while (tryCount < maxTries) {
+                        try {
+                            response = chain.proceed(request)
+                            if (response.isSuccessful) return@addInterceptor response
+                            
+                            // Only retry on certain status codes (e.g. 5xx or 408)
+                            if (response.code < 500 && response.code != 408) return@addInterceptor response
+                        } catch (e: IOException) {
+                            exception = e
+                        }
+                        
+                        tryCount++
+                        if (tryCount < maxTries) {
+                            val backoff = (1000L * Math.pow(2.0, tryCount.toDouble())).toLong()
+                            Thread.sleep(backoff)
+                        }
+                    }
+                    
+                    return@addInterceptor response ?: throw exception!!
+                }
                 
                 // Apply IP version filtering
                 dns(object : Dns {

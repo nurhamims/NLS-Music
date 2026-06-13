@@ -2,15 +2,21 @@ package iad1tya.echo.music.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.asPaddingValues
@@ -73,7 +79,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -552,6 +560,7 @@ fun DailyDiscoverCard(
 @Composable
 fun HomeHeader(
     userName: String?,
+    onRecognitionClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val greeting = remember {
@@ -586,6 +595,61 @@ fun HomeHeader(
                 overflow = TextOverflow.Ellipsis
             )
         }
+
+        VoiceRecognitionButton(onClick = onRecognitionClick)
+    }
+}
+
+@Composable
+private fun VoiceRecognitionButton(
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "micScale"
+    )
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
+                    )
+                ),
+                shape = CircleShape
+            )
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Glow effect
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .background(primaryColor.copy(alpha = 0.15f), CircleShape)
+                .blur(8.dp)
+        )
+
+        Icon(
+            painter = painterResource(R.drawable.mic),
+            contentDescription = "Voice Recognition",
+            tint = primaryColor,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
@@ -940,6 +1004,8 @@ fun HomeScreen(
         forgottenFavoritesLazyGridState.scrollToItem(0)
     }
 
+    val hasError by viewModel.hasError.collectAsState()
+
     PullToRefreshBox(
         state = pullRefreshState,
         isRefreshing = isRefreshing,
@@ -954,10 +1020,34 @@ fun HomeScreen(
             )
         }
     ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopStart
-        ) {
+        if (hasError && homePage == null && !isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(R.drawable.wifi_off),
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.error_no_internet),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = viewModel::refresh) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+            }
+        } else {
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopStart
+            ) {
             val horizontalLazyGridItemWidthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f
             val horizontalLazyGridItemWidth = maxWidth * horizontalLazyGridItemWidthFactor
             val quickPicksSnapLayoutInfoProvider = remember(quickPicksLazyGridState) {
@@ -983,7 +1073,12 @@ fun HomeScreen(
             ) {
                 item {
                     HomeHeader(
-                        userName = displayName
+                        userName = displayName,
+                        onRecognitionClick = {
+                            navController.navigate("recognition") {
+                                launchSingleTop = true
+                            }
+                        }
                     )
                 }
 
