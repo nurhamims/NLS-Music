@@ -109,8 +109,8 @@ fun AboutScreen(
                     AboutActionRow(
                         icon = painterResource(R.drawable.website),
                         title = "Website",
-                        subtitle = "Coming soon",
-                        onClick = { uriHandler.openUri("") },
+                        subtitle = "nlsmusic.netlify.app",
+                        onClick = { uriHandler.openUri("https://nlsmusic.netlify.app") },
                     )
                     AboutDivider()
                     AboutActionRow(
@@ -136,8 +136,8 @@ fun AboutScreen(
                     AboutActionRow(
                         icon = painterResource(R.drawable.github),
                         title = "GitHub",
-                        subtitle = "nurhamims/Echo-Music",
-                        onClick = { uriHandler.openUri("https://github.com/nurhamimbadhon/Echo-Music") },
+                        subtitle = "nurhamims/NLS-Music",
+                        onClick = { uriHandler.openUri("https://github.com/nurhamims/NLS-Music") },
                     )
                     AboutDivider()
                     AboutActionRow(
@@ -172,9 +172,8 @@ private fun AboutAppCard() {
         ) {
             val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
             Image(
-                painter = painterResource(R.drawable.ic_launcher_nobg),
+                painter = painterResource(R.mipmap.ic_launcher),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(if (isDark) Color.White else Color(0xFFEA3829)),
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)

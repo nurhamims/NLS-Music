@@ -77,8 +77,8 @@ fun WelcomeDialog(
                     WelcomeActionRow(
                         icon = painterResource(R.drawable.github),
                         title = "GitHub",
-                        subtitle = "nurhamims",
-                        onClick = { uriHandler.openUri("https://github.com/nurhamimbadhon") }
+                        subtitle = "nurhamims/NLS-Music",
+                        onClick = { uriHandler.openUri("https://github.com/nurhamims/NLS-Music") }
                     )
                 }
 
