@@ -2,6 +2,7 @@ package iad1tya.echo.music.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -548,6 +549,95 @@ fun DailyDiscoverCard(
     }
 }
 
+@Composable
+fun HomeHeader(
+    userName: String?,
+    avatarUrl: String?,
+    onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val greeting = remember {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            in 17..20 -> "Good Evening"
+            else -> "Good Night"
+        }
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "$greeting,",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = userName ?: "Guest",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = onSearchClick,
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.search),
+                    contentDescription = "Search",
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .clickable { onProfileClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (avatarUrl != null) {
+                    AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(R.drawable.person),
+                        contentDescription = "Profile",
+                        modifier = Modifier.size(26.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -575,6 +665,7 @@ fun HomeScreen(
     val dailyDiscover by viewModel.dailyDiscover.collectAsState()
     val communityPlaylists by viewModel.communityPlaylists.collectAsState()
 
+    val displayName by viewModel.displayName.collectAsState()
     val allLocalItems by viewModel.allLocalItems.collectAsState()
     val allYtItems by viewModel.allYtItems.collectAsState()
     val speedDialItems by viewModel.speedDialItems.collectAsState()
@@ -939,6 +1030,15 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
             ) {
+                item {
+                    HomeHeader(
+                        userName = displayName,
+                        avatarUrl = url,
+                        onProfileClick = { navController.navigate("settings/account") },
+                        onSearchClick = { navController.navigate(Screens.Search.route) }
+                    )
+                }
+
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),

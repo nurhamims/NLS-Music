@@ -31,6 +31,7 @@ val PureBlackMiniPlayerKey = booleanPreferencesKey("pureBlackMiniPlayer")
 val MiniPlayerOutlineKey = booleanPreferencesKey("miniPlayerOutline")
 val DensityScaleKey = floatPreferencesKey("density_scale_factor")
 val CustomDensityScaleKey = floatPreferencesKey("custom_density_scale_value")
+val UserNameKey = stringPreferencesKey("userName")
 
 enum class DensityScale(val value: Float, val label: String) {
     NATIVE(1.0f, "Native (100%)"),

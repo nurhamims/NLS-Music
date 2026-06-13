@@ -219,7 +219,21 @@ class HomeViewModel @Inject constructor(
     }
 
     val accountName = MutableStateFlow("Guest")
+    val userName = context.dataStore.data.map {
+        it[iad1tya.echo.music.constants.UserNameKey]
+    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    val displayName = combine(userName, accountName) { user, account ->
+        user ?: account
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "Guest")
+    
     val accountImageUrl = MutableStateFlow<String?>(null)
+
+    fun setUserName(name: String) {
+        viewModelScope.launch {
+            context.dataStore.edit { it[iad1tya.echo.music.constants.UserNameKey] = name }
+        }
+    }
 
     fun togglePin(item: YTItem) {
         viewModelScope.launch(Dispatchers.IO) {

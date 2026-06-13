@@ -119,7 +119,13 @@ fun FloatingNavigationToolbar(
                         musicRecognitionContentDescription = musicRecognitionContentDescription,
                     )
                 },
-                modifier = Modifier.widthIn(max = 480.dp),
+                modifier = Modifier
+                    .widthIn(max = 480.dp)
+                    .border(
+                        width = 0.5.dp,
+                        color = if (pureBlack) Color.White.copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    ),
                 colors = toolbarColors,
                 scrollBehavior = scrollBehavior,
                 animationSpec = FloatingToolbarDefaults.animationSpec(),
@@ -143,7 +149,13 @@ fun FloatingNavigationToolbar(
                         contentDescription = fabContentDescription,
                     )
                 },
-                modifier = Modifier.widthIn(max = 480.dp),
+                modifier = Modifier
+                    .widthIn(max = 480.dp)
+                    .border(
+                        width = 0.5.dp,
+                        color = if (pureBlack) Color.White.copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    ),
                 colors = toolbarColors,
                 scrollBehavior = scrollBehavior,
                 animationSpec = FloatingToolbarDefaults.animationSpec(),
@@ -159,7 +171,13 @@ fun FloatingNavigationToolbar(
         } else {
             HorizontalFloatingToolbar(
                 expanded = true,
-                modifier = Modifier.widthIn(max = 420.dp),
+                modifier = Modifier
+                    .widthIn(max = 420.dp)
+                    .border(
+                        width = 0.5.dp,
+                        color = if (pureBlack) Color.White.copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    ),
                 colors = toolbarColors,
                 scrollBehavior = scrollBehavior,
             ) {
@@ -484,30 +502,30 @@ private fun FloatingNavigationToolbarItem(
 @Composable
 private fun floatingToolbarContainerColor(pureBlack: Boolean): Color {
     return if (pureBlack) {
-        Color.Black
+        Color.Black.copy(alpha = 0.82f)
     } else {
-        MaterialTheme.colorScheme.surfaceContainer
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
     }
 }
 
 @Composable
 private fun floatingToolbarFabContainerColor(pureBlack: Boolean): Color {
-    return if (pureBlack) Color.White.copy(alpha = 0.12f) else MaterialTheme.colorScheme.tertiaryContainer
+    return if (pureBlack) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
 }
 
 @Composable
 private fun floatingToolbarFabContentColor(pureBlack: Boolean): Color {
-    return if (pureBlack) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
+    return if (pureBlack) Color.White else MaterialTheme.colorScheme.primary
 }
 
 @Composable
 private fun floatingToolbarSelectedItemContainerColor(pureBlack: Boolean): Color {
-    return if (pureBlack) Color.White.copy(alpha = 0.12f) else MaterialTheme.colorScheme.secondaryContainer
+    return if (pureBlack) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
 }
 
 @Composable
 private fun floatingToolbarSelectedItemContentColor(pureBlack: Boolean): Color {
-    return if (pureBlack) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+    return if (pureBlack) Color.White else MaterialTheme.colorScheme.primary
 }
 
 

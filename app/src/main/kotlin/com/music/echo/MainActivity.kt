@@ -191,6 +191,8 @@ import iad1tya.echo.music.ui.player.BottomSheetPlayer
 import iad1tya.echo.music.ui.screens.Screens
 import iad1tya.echo.music.ui.screens.SettingDialoge
 import iad1tya.echo.music.ui.screens.WelcomeDialog
+import iad1tya.echo.music.ui.screens.NamePromptDialog
+import iad1tya.echo.music.constants.UserNameKey
 import iad1tya.echo.music.ui.screens.navigationBuilder
 import iad1tya.echo.music.ui.screens.settings.DarkMode
 import iad1tya.echo.music.ui.screens.settings.NavigationTab
@@ -729,6 +731,7 @@ class MainActivity : ComponentActivity() {
 
                 val (lastOpenedVersionCode, setLastOpenedVersionCode) = rememberPreference(iad1tya.echo.music.constants.LastOpenedVersionCodeKey, -1)
                 var showWelcomeDialog by remember { mutableStateOf(false) }
+                var showNamePrompt by remember { mutableStateOf(false) }
 
                 LaunchedEffect(lastOpenedVersionCode) {
                     if (lastOpenedVersionCode < BuildConfig.VERSION_CODE) {
@@ -1180,6 +1183,20 @@ class MainActivity : ComponentActivity() {
                             onDismissRequest = {
                                 showWelcomeDialog = false
                                 setLastOpenedVersionCode(BuildConfig.VERSION_CODE)
+                                lifecycleScope.launch {
+                                    if (dataStore.get(UserNameKey) == null) {
+                                        showNamePrompt = true
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    if (showNamePrompt) {
+                        NamePromptDialog(
+                            onDismissRequest = { name ->
+                                homeViewModel.setUserName(name)
+                                showNamePrompt = false
                             }
                         )
                     }
